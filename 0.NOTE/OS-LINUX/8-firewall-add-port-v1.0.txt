@@ -1,0 +1,86 @@
+## install, start, stop, restart, status firewall:
+
+### cài đặt:
+
+sudo yum install firewalld
+
+### kiểm tra trạng thái:
+
+systemctl status firewalld
+
+### dừng firewall:
+
+systemctl stop firewalld.service
+
+### cho phép firewall hoạt động:
+
+sudo systemctl enable firewalld
+
+### bật firewall:
+
+sudo systemctl start firewalld
+
+
+Note: nếu có bật firewalld và add port thì sẽ không call được các port của nó từ bên ngoài.
+
+
+## Add port firewall:
+
+firewall-cmd --add-port=3333/tcp --zone=public
+
+firewall-cmd --add-port=3333/tcp --permanent
+
+firewall-cmd --add-port=8388/tcp --permanent
+
+firewall-cmd --add-port=3232/tcp --permanent
+
+firewall-cmd --add-port=80/tcp --permanent
+
+firewall-cmd --add-port=3005/tcp --permanent
+
+firewall-cmd --add-port=3005/tcp --permanent
+
+## Liệt kê toàn bộ port được add lên firewall:
+
+firewall-cmd --zone=public --list-ports
+
+firewall-cmd --permanent --list-ports
+
+
+## Reload firewall của hệ thống
+
+firewall-cmd --reload
+
+firewall-cmd --list-all-zones
+
+firewall-cmd --permanent --list-ports
+ 
+ 
+123.30.180.43:3232/neo/login/ip
+
+firewall-cmd --permanent --zone=public --add-interface=eno1:0
+
+firewall-cmd --runtime-to-permanent
+
+
+## Load thư viện cần sử dụng
+
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+
+Trên Server: /etc/httpd/conf.modules.d/00-proxy.conf
+
+## Forward đường dẫn vào lớp bên trong
+
+ProxyPass /sample http://localhost:8080/sample
+ProxyPassReverse /sample http://localhost:8080/sample
+
+ProxyPass "^/api/(.*)$" "http://localhost:3232/api/$1"
+ProxyPassReverse "^/api/(.*)$" "http://localhost:3232/api/$1"
+
+Trên Server: /etc/httpd/sites-available/sim.vn.conf
+
+## Thông tin đăng nhập hệ thống production:
+
+123.30.180.43
+
