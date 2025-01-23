@@ -1,0 +1,24 @@
+vrrp_script chk_mount_disk {
+  script       "/home/script/ha_vgapp3.sh"
+  interval 2   # check every 2 seconds
+  fall 2       # require 2 failures for KO
+  rise 2       # require 2 successes for OK
+}
+vrrp_script chk_haproxy {
+    script "killall -0 haproxy"
+    interval 2
+    weight 2
+}
+vrrp_instance VI_1 {
+    interface ens224
+    state MASTER
+    virtual_router_id 50
+    priority 100
+    virtual_ipaddress {
+        10.10.10.200/24
+    }
+    track_script {
+        chk_haproxy
+	chk_mount_disk
+    }
+}

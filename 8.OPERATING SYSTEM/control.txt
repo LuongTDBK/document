@@ -1,0 +1,109 @@
+#/bin/sh
+
+#
+# Service MAIL
+# OS User:      appgw
+# start/stop/clean/check script for service MAIL
+# author        : CanhMH
+# Date          : 07/11/2019
+# ident "%Z%%M% %I% %E SMI"
+max_count=100
+
+root_path=/app/adapter-ldap
+path_log=${root_path}/logs/server.log
+module_name="Adapter Ldap"
+JAVA_OPS="-Xss256K -Xms64M -Xmx4096M -Dfile.encoding=utf-8"
+MAIN_CLASS=vn.neo.App
+# MAIN_CLASS=vn.neo.StartupApplication
+
+cd ${root_path}
+validPath2PID()
+{
+        for pid in $(ps -ef | grep $1 | grep -v "grep" | awk '{print $2}'); do
+                if [ -z "$(pwdx $pid 2>&1 >/dev/null)" ]; then
+                        path=$(pwdx $pid | awk '{print $2}')
+                        if [[ "${path}" == "${root_path}" ]] ; then
+                                echo $pid
+                                break
+                        fi
+                fi
+        done
+}
+do_start()
+{
+        pid=$(validPath2PID java*.*${MAIN_CLASS})
+        if [[ ${#pid} -gt 0 ]]; then
+                echo "${module_name} is Running on pid=" ${pid}
+        else
+                count=0
+                nohup java ${JAVA_OPS} -cp "$root_path/libs/*:$root_path/" ${MAIN_CLASS} > ${path_log}  2>&1 &
+                sleep 1
+                timeout 10 tail -f ${path_log} & pidTail=$!
+                echo "Execute: nohup java $JAVA_OPS -classpath '$root_path/libs/*' $MAIN_CLASS > ${path_log}  2>&1 &"
+                while [[ ( -z $(grep "Server is ready" "${path_log}") ) && ( $count -lt ${max_count} ) ]]
+                do 
+                        sleep 1; 
+                        count=`expr $count + 1`
+                done 
+                kill $pidTail
+                echo "Start $module_name, execute time: ${count}s"
+        fi
+}
+
+do_stop()
+{
+        pid=$(validPath2PID java*.*${MAIN_CLASS})
+        if [[ ${#pid} -gt 0 ]]; then
+                echo "Stop processing"
+                kill -9 ${pid}
+                count=0
+                while [[ ( -z $(grep "shutdown complete" "${path_log}") ) && ( ${count} -lt ${max_count} ) ]]
+                do 
+                        sleep 1; 
+                        count=`expr $count + 1`
+                done 
+                echo "$module_name stop done"
+        else
+                echo "$module_name stopped"
+        fi
+}
+
+do_status()
+{
+        pid=$(validPath2PID java*.*${MAIN_CLASS})
+        if [[ ${#pid} -gt 0 ]]; then
+                echo "${module_name} is running pid=$pid"
+        else
+                echo "${module_name} stopped"
+        fi
+
+}
+
+#####################################################################
+#       Service 
+#####################################################################
+case "$1" in
+        'start')
+                do_start
+                ;;
+        'stop')
+                do_stop
+                ;;
+        'check')
+                do_status
+                ;;
+        'status')
+                do_status
+                ;;
+        'restart')
+                do_stop
+                sleep 1
+                do_start
+                ;;
+        'tail')
+                tail -f $root_path/logs/`basename $0`.log
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop|check|status|restart}"
+         ;;
+esac
